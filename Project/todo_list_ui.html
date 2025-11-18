@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple To-Do List</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-md mx-auto bg-white rounded shadow p-6">
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">To-Do List</h1>
+        </div>
+
+        <!-- Menu -->
+        <div class="grid grid-cols-2 gap-2 mb-6">
+            <button id="view-tasks" class="bg-blue-500 text-white py-2 px-4 rounded">View Tasks</button>
+            <button id="add-task" class="bg-green-500 text-white py-2 px-4 rounded">Add Task</button>
+            <button id="complete-task" class="bg-yellow-500 text-white py-2 px-4 rounded">Complete Task</button>
+            <button id="view-completed" class="bg-purple-500 text-white py-2 px-4 rounded">View Completed</button>
+            <button id="remove-task" class="bg-red-500 text-white py-2 px-4 rounded">Remove Task</button>
+            <button id="clear-all" class="bg-gray-500 text-white py-2 px-4 rounded">Clear All</button>
+        </div>
+
+        <!-- Task Display Area -->
+        <div id="task-display" class="mb-6 min-h-40 border border-gray-200 rounded p-4">
+            <p class="text-gray-500 text-center">Select an option above</p>
+        </div>
+
+        <!-- Add Task Form (hidden by default) -->
+        <div id="add-form" class="hidden mb-6">
+            <div class="space-y-3">
+                <input type="text" id="task-name" class="w-full px-3 py-2 border border-gray-300 rounded" placeholder="Task name">
+                <select id="task-priority" class="w-full px-3 py-2 border border-gray-300 rounded">
+                    <option value="High">High</option>
+                    <option value="Medium" selected>Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+                <input type="text" id="task-category" class="w-full px-3 py-2 border border-gray-300 rounded" placeholder="Category">
+                <div class="flex space-x-2">
+                    <button id="save-task" class="bg-green-500 text-white py-2 px-4 rounded flex-1">Save</button>
+                    <button id="cancel-add" class="bg-gray-500 text-white py-2 px-4 rounded flex-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complete Task Form (hidden by default) -->
+        <div id="complete-form" class="hidden mb-6">
+            <div class="space-y-3">
+                <p class="text-gray-700">Select a task to complete:</p>
+                <div id="complete-list" class="border border-gray-300 rounded p-2 min-h-20">
+                    <!-- Tasks will be listed here -->
+                </div>
+                <div class="flex space-x-2">
+                    <button id="confirm-complete" class="bg-yellow-500 text-white py-2 px-4 rounded flex-1">Complete</button>
+                    <button id="cancel-complete" class="bg-gray-500 text-white py-2 px-4 rounded flex-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remove Task Form (hidden by default) -->
+        <div id="remove-form" class="hidden mb-6">
+            <div class="space-y-3">
+                <p class="text-gray-700">Select a task to remove:</p>
+                <div id="remove-list" class="border border-gray-300 rounded p-2 min-h-20">
+                    <!-- Tasks will be listed here -->
+                </div>
+                <div class="flex space-x-2">
+                    <button id="confirm-remove" class="bg-red-500 text-white py-2 px-4 rounded flex-1">Remove</button>
+                    <button id="cancel-remove" class="bg-gray-500 text-white py-2 px-4 rounded flex-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize data
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            let completed = JSON.parse(localStorage.getItem('completed')) || [];
+            
+            // DOM Elements
+            const taskDisplay = document.getElementById('task-display');
+            const addForm = document.getElementById('add-form');
+            const completeForm = document.getElementById('complete-form');
+            const removeForm = document.getElementById('remove-form');
+            const completeList = document.getElementById('complete-list');
+            const removeList = document.getElementById('remove-list');
+            
+            // Buttons
+            const viewTasksBtn = document.getElementById('view-tasks');
+            const addTaskBtn = document.getElementById('add-task');
+            const completeTaskBtn = document.getElementById('complete-task');
+            const viewCompletedBtn = document.getElementById('view-completed');
+            const removeTaskBtn = document.getElementById('remove-task');
+            const clearAllBtn = document.getElementById('clear-all');
+            
+            // Form elements
+            const taskNameInput = document.getElementById('task-name');
+            const taskPrioritySelect = document.getElementById('task-priority');
+            const taskCategoryInput = document.getElementById('task-category');
+            const saveTaskBtn = document.getElementById('save-task');
+            const cancelAddBtn = document.getElementById('cancel-add');
+            const confirmCompleteBtn = document.getElementById('confirm-complete');
+            const cancelCompleteBtn = document.getElementById('cancel-complete');
+            const confirmRemoveBtn = document.getElementById('confirm-remove');
+            const cancelRemoveBtn = document.getElementById('cancel-remove');
+            
+            // Save data to localStorage
+            function saveData() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+                localStorage.setItem('completed', JSON.stringify(completed));
+            }
+            
+            // Show notification using SweetAlert
+            function showNotification(message, type = 'success') {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'bottom-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+                
+                Toast.fire({
+                    icon: type,
+                    title: message
+                });
+            }
+            
+            // Sort tasks by priority
+            function sortTasks() {
+                const sorted = [];
+                const priorities = ['High', 'Medium', 'Low'];
+                
+                priorities.forEach(priority => {
+                    tasks.forEach(task => {
+                        if (task[1] === priority) {
+                            sorted.push(task);
+                        }
+                    });
+                });
+                
+                return sorted;
+            }
+            
+            // Hide all forms
+            function hideAllForms() {
+                addForm.classList.add('hidden');
+                completeForm.classList.add('hidden');
+                removeForm.classList.add('hidden');
+            }
+            
+            // Display tasks
+            function displayTasks() {
+                hideAllForms();
+                
+                if (tasks.length === 0) {
+                    taskDisplay.innerHTML = '<p class="text-gray-500 text-center">No tasks available.</p>';
+                } else {
+                    const sortedTasks = sortTasks();
+                    let html = '';
+                    
+                    sortedTasks.forEach((task, index) => {
+                        html += `
+                            <div class="mb-2 p-2 bg-gray-50 rounded">
+                                <div class="font-medium">${task[0]}</div>
+                                <div class="text-sm text-gray-500">${task[1]} (${task[2]})</div>
+                            </div>
+                        `;
+                    });
+                    
+                    taskDisplay.innerHTML = html;
+                }
+            }
+            
+            // Display completed tasks
+            function displayCompletedTasks() {
+                hideAllForms();
+                
+                if (completed.length === 0) {
+                    taskDisplay.innerHTML = '<p class="text-gray-500 text-center">No completed tasks.</p>';
+                } else {
+                    let html = '';
+                    
+                    completed.forEach((task, index) => {
+                        html += `
+                            <div class="mb-2 p-2 bg-gray-50 rounded">
+                                <div class="font-medium">${task[0]}</div>
+                                <div class="text-sm text-gray-500">${task[1]} (${task[2]})</div>
+                            </div>
+                        `;
+                    });
+                    
+                    taskDisplay.innerHTML = html;
+                }
+            }
+            
+            // Display tasks for completion
+            function displayTasksForCompletion() {
+                hideAllForms();
+                completeForm.classList.remove('hidden');
+                
+                if (tasks.length === 0) {
+                    completeList.innerHTML = '<p class="text-gray-500 text-center">No tasks to complete.</p>';
+                } else {
+                    const sortedTasks = sortTasks();
+                    let html = '';
+                    
+                    sortedTasks.forEach((task, index) => {
+                        html += `
+                            <div class="mb-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="complete-task" value="${index}" class="mr-2">
+                                    <div>
+                                        <div class="font-medium">${task[0]}</div>
+                                        <div class="text-sm text-gray-500">${task[1]}</div>
+                                    </div>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    
+                    completeList.innerHTML = html;
+                }
+            }
+            
+            // Display tasks for removal
+            function displayTasksForRemoval() {
+                hideAllForms();
+                removeForm.classList.remove('hidden');
+                
+                if (tasks.length === 0) {
+                    removeList.innerHTML = '<p class="text-gray-500 text-center">No tasks to remove.</p>';
+                } else {
+                    const sortedTasks = sortTasks();
+                    let html = '';
+                    
+                    sortedTasks.forEach((task, index) => {
+                        html += `
+                            <div class="mb-2">
+                                <label class="flex items-center">
+                                    <input type="radio" name="remove-task" value="${index}" class="mr-2">
+                                    <div>
+                                        <div class="font-medium">${task[0]}</div>
+                                        <div class="text-sm text-gray-500">${task[1]}</div>
+                                    </div>
+                                </label>
+                            </div>
+                        `;
+                    });
+                    
+                    removeList.innerHTML = html;
+                }
+            }
+            
+            // Event Listeners
+            viewTasksBtn.addEventListener('click', displayTasks);
+            
+            addTaskBtn.addEventListener('click', function() {
+                hideAllForms();
+                addForm.classList.remove('hidden');
+                taskNameInput.focus();
+            });
+            
+            completeTaskBtn.addEventListener('click', displayTasksForCompletion);
+            
+            viewCompletedBtn.addEventListener('click', displayCompletedTasks);
+            
+            removeTaskBtn.addEventListener('click', displayTasksForRemoval);
+            
+            clearAllBtn.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Clear all tasks?',
+                    text: "This will remove all active tasks. You can't undo this!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, clear all!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        tasks = [];
+                        saveData();
+                        displayTasks();
+                        showNotification('All tasks cleared!');
+                    }
+                });
+            });
+            
+            saveTaskBtn.addEventListener('click', function() {
+                const name = taskNameInput.value.trim();
+                const priority = taskPrioritySelect.value;
+                const category = taskCategoryInput.value.trim();
+                
+                if (name && category) {
+                    tasks.push([name, priority, category]);
+                    saveData();
+                    hideAllForms();
+                    displayTasks();
+                    showNotification('Task added!');
+                    
+                    // Reset form
+                    taskNameInput.value = '';
+                    taskCategoryInput.value = '';
+                    taskPrioritySelect.value = 'Medium';
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'Please fill in all fields!'
+                    });
+                }
+            });
+            
+            cancelAddBtn.addEventListener('click', function() {
+                hideAllForms();
+                displayTasks();
+                
+                // Reset form
+                taskNameInput.value = '';
+                taskCategoryInput.value = '';
+                taskPrioritySelect.value = 'Medium';
+            });
+            
+            confirmCompleteBtn.addEventListener('click', function() {
+                const selectedTask = document.querySelector('input[name="complete-task"]:checked');
+                
+                if (selectedTask) {
+                    const index = parseInt(selectedTask.value);
+                    const sortedTasks = sortTasks();
+                    const taskToComplete = sortedTasks[index];
+                    
+                    // Find the actual index in the tasks array
+                    const actualIndex = tasks.findIndex(task => 
+                        task[0] === taskToComplete[0] && 
+                        task[1] === taskToComplete[1] && 
+                        task[2] === taskToComplete[2]
+                    );
+                    
+                    if (actualIndex !== -1) {
+                        Swal.fire({
+                            title: 'Complete this task?',
+                            text: `"${taskToComplete[0]}" will be moved to completed tasks.`,
+                            icon: 'question',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, complete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                completed.push(tasks[actualIndex]);
+                                tasks.splice(actualIndex, 1);
+                                saveData();
+                                hideAllForms();
+                                displayTasks();
+                                showNotification('Task completed!');
+                            }
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No task selected',
+                        text: 'Please select a task to complete!'
+                    });
+                }
+            });
+            
+            cancelCompleteBtn.addEventListener('click', function() {
+                hideAllForms();
+                displayTasks();
+            });
+            
+            confirmRemoveBtn.addEventListener('click', function() {
+                const selectedTask = document.querySelector('input[name="remove-task"]:checked');
+                
+                if (selectedTask) {
+                    const index = parseInt(selectedTask.value);
+                    const sortedTasks = sortTasks();
+                    const taskToRemove = sortedTasks[index];
+                    
+                    // Find the actual index in the tasks array
+                    const actualIndex = tasks.findIndex(task => 
+                        task[0] === taskToRemove[0] && 
+                        task[1] === taskToRemove[1] && 
+                        task[2] === taskToRemove[2]
+                    );
+                    
+                    if (actualIndex !== -1) {
+                        Swal.fire({
+                            title: 'Remove this task?',
+                            text: `"${taskToRemove[0]}" will be permanently deleted.`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#3085d6',
+                            cancelButtonColor: '#d33',
+                            confirmButtonText: 'Yes, remove it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                tasks.splice(actualIndex, 1);
+                                saveData();
+                                hideAllForms();
+                                displayTasks();
+                                showNotification('Task removed!');
+                            }
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No task selected',
+                        text: 'Please select a task to remove!'
+                    });
+                }
+            });
+            
+            cancelRemoveBtn.addEventListener('click', function() {
+                hideAllForms();
+                displayTasks();
+            });
+            
+            // Initial display
+            displayTasks();
+        });
+    </script>
+</body>
+</html>
