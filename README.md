@@ -90,5 +90,3 @@ This was an excellent introduction to Python programming through practical appli
 ---
 
 **Learning never stops. Keep coding, keep growing!** 🚀
-
-*Session completed with hands-on Python project development*
