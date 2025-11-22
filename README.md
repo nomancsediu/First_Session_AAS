@@ -76,15 +76,6 @@ After completing this session, I gained understanding of:
 - **Input Validation**: Handles empty lists and invalid choices
 - **Dynamic Numbering**: Tasks displayed with sequential numbers for easy selection
 
-## 🔮 Future Enhancements
-
-Potential improvements for the next sessions:
-- **File Persistence**: Save tasks to file for permanent storage
-- **Due Dates**: Add deadline tracking for tasks
-- **Search & Filter**: Find tasks by name, priority, or category
-- **Edit Tasks**: Modify existing task details
-- **Statistics**: Show completion rates and productivity metrics
-- **GUI Version**: Create a graphical interface using tkinter
 
 ## 🤝 Session Feedback
 
